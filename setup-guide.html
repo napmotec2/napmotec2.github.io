@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AU Agent — Setup Guide</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#0f172a;color:#e2e8f0;line-height:1.7;font-size:15px}
+.wrap{max-width:860px;margin:0 auto;padding:32px 20px 80px}
+h1{font-size:28px;font-weight:800;color:#fff;margin-bottom:6px}
+.subtitle{color:#64748b;font-size:14px;margin-bottom:40px}
+/* Phase */
+.phase{margin-bottom:48px}
+.phase-header{display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid #1e293b}
+.phase-num{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;flex-shrink:0}
+.phase-title{font-size:19px;font-weight:700;color:#fff}
+.phase-sub{font-size:12px;color:#64748b;margin-top:1px}
+/* Step */
+.step{background:#1e293b;border-radius:12px;padding:20px 22px;margin-bottom:12px;border-left:4px solid #334155;position:relative}
+.step.done{border-left-color:#22c55e}
+.step.warn{border-left-color:#f59e0b}
+.step-num{font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.step-title{font-size:15px;font-weight:700;color:#f1f5f9;margin-bottom:8px}
+.step p{color:#94a3b8;font-size:14px;margin-bottom:8px}
+.step p:last-child{margin-bottom:0}
+/* Code block */
+.code{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:14px 16px;font-family:'Consolas','Courier New',monospace;font-size:13px;color:#7dd3fc;margin:10px 0;position:relative;white-space:pre-wrap;word-break:break-all}
+.code .cmt{color:#475569}
+.copy-btn{position:absolute;top:8px;right:8px;background:#334155;border:none;color:#94a3b8;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;transition:background .15s}
+.copy-btn:hover{background:#475569;color:#fff}
+.copy-btn.copied{background:#22c55e;color:#fff}
+/* Badge */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;margin-right:6px}
+.badge-green{background:#052e16;color:#4ade80}
+.badge-blue{background:#0c1a3a;color:#60a5fa}
+.badge-yellow{background:#292006;color:#fbbf24}
+.badge-purple{background:#1e1040;color:#a78bfa}
+/* URL box */
+.url-box{background:#0c1a3a;border:1px solid #1e3a5f;border-radius:8px;padding:12px 16px;font-family:monospace;font-size:13px;color:#60a5fa;margin:10px 0;cursor:pointer;display:flex;align-items:center;justify-content:space-between}
+.url-box span{opacity:.6;font-size:11px}
+/* Tip */
+.tip{background:#422006;border-left:3px solid #f59e0b;border-radius:0 8px 8px 0;padding:10px 14px;font-size:13px;color:#fcd34d;margin:10px 0}
+.tip strong{color:#fbbf24}
+/* Note */
+.note{background:#052e16;border-left:3px solid #22c55e;border-radius:0 8px 8px 0;padding:10px 14px;font-size:13px;color:#86efac;margin:10px 0}
+/* Arrow connector */
+.connector{text-align:center;color:#334155;font-size:20px;margin:4px 0}
+/* Image placeholder */
+.img-ph{background:#1e293b;border:2px dashed #334155;border-radius:8px;padding:20px;text-align:center;color:#475569;font-size:13px;margin:10px 0}
+/* Table */
+table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px}
+th{background:#1e293b;color:#94a3b8;padding:8px 12px;text-align:left;font-weight:600}
+td{padding:8px 12px;border-bottom:1px solid #1e293b;color:#cbd5e1;vertical-align:top}
+tr:last-child td{border-bottom:none}
+td:first-child{font-family:monospace;color:#7dd3fc;white-space:nowrap}
+/* Nav */
+.toc{background:#1e293b;border-radius:12px;padding:20px 24px;margin-bottom:40px}
+.toc h3{font-size:14px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.toc a{display:block;color:#60a5fa;text-decoration:none;padding:4px 0;font-size:14px;border-bottom:1px solid #0f172a}
+.toc a:last-child{border-bottom:none}
+.toc a:hover{color:#93c5fd}
+.toc .toc-num{color:#334155;margin-right:8px}
+/* Final */
+.final{background:linear-gradient(135deg,#052e16,#0c2a1a);border:1px solid #22c55e33;border-radius:16px;padding:28px;text-align:center;margin-top:40px}
+.final h2{color:#4ade80;font-size:22px;margin-bottom:8px}
+.final p{color:#86efac;font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>🤖 AU Agent — Setup Guide</h1>
+<p class="subtitle">คู่มือ deploy ระบบ LINE → OCR → Dashboard ทีละขั้นตอน | ใช้เวลาประมาณ 45 นาที</p>
+
+<!-- TOC -->
+<div class="toc">
+  <h3>📋 สารบัญ</h3>
+  <a href="#s1"><span class="toc-num">1.</span> GitHub — อัปโหลด code ขึ้น cloud</a>
+  <a href="#s2"><span class="toc-num">2.</span> Supabase — สร้างฐานข้อมูล</a>
+  <a href="#s3"><span class="toc-num">3.</span> Railway — deploy backend</a>
+  <a href="#s4"><span class="toc-num">4.</span> LINE Developers — ตั้ง Webhook</a>
+  <a href="#s5"><span class="toc-num">5.</span> Netlify — host dashboard</a>
+  <a href="#s6"><span class="toc-num">6.</span> เชื่อม Dashboard กับ Backend</a>
+  <a href="#s7"><span class="toc-num">7.</span> ลงทะเบียน LINE Group</a>
+  <a href="#s8"><span class="toc-num">8.</span> ทดสอบระบบ</a>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- PHASE 1: GitHub -->
+<!-- ══════════════════════════════════════════ -->
+<div class="phase" id="s1">
+  <div class="phase-header">
+    <div class="phase-num" style="background:#1c1c2e;color:#a78bfa">1</div>
+    <div>
+      <div class="phase-title">GitHub — อัปโหลด Code</div>
+      <div class="phase-sub">Railway ต้องการ GitHub repo เพื่อ deploy อัตโนมัติ</div>
+    </div>
+    <div style="margin-left:auto"><span class="badge badge-purple">~5 นาที</span></div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">Step 1.1</div>
+    <div class="step-title">สมัคร GitHub (ถ้ายังไม่มี)</div>
+    <p>เปิดเบราว์เซอร์ไปที่ <strong style="color:#60a5fa">https://github.com</strong> → คลิก <strong>Sign up</strong></p>
+    <p>ใส่ Email, Password, Username → ยืนยัน email → Login เข้ามา</p>
+    <div class="note">✅ ถ้ามี GitHub account แล้ว ข้ามขั้นตอนนี้ได้เลย</div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">Step 1.2</div>
+    <div class="step-title">สร้าง Repository ใหม่</div>
+    <p>คลิกปุ่ม <strong style="color:#22c55e">＋ New</strong> มุมบนขวา หรือไปที่:</p>
+    <div class="url-box">https://github.com/new</div>
+    <p>กรอกข้อมูล:</p>
+    <table>
+      <tr><td>Repository name</td><td><strong>au-agent</strong></td></tr>
+      <tr><td>Visibility</td><td><strong>Private</strong> (เพื่อความปลอดภัย)</td></tr>
+      <tr><td>Initialize README</td><td>ไม่ต้องติ๊ก</td></tr>
+    </table>
+    <p>คลิก <strong style="color:#22c55e">Create repository</strong></p>
+  </div>
+
+  <div class="step">
+    <div class="step-num">Step 1.3</div>
+    <div class="step-title">ติดตั้ง GitHub Desktop (วิธีง่ายที่สุด)</div>
+    <p>ดาวน์โหลดที่ <strong style="color:#60a5fa">https://desktop.github.com</strong> → ติดตั้ง → Login ด้วย GitHub account</p>
+    <div class="tip">💡 ถ้าใช้ Command Line ได้ → ข้ามไปทำ Step 1.4 แทน</div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">Step 1.4</div>
+    <div class="step-title">อัปโหลด folder backend ขึ้น GitHub</div>
+    <p><strong>วิธีที่ 1 — GitHub Desktop (แนะนำ):</strong></p>
+    <p>1. เปิด GitHub Desktop → File → <strong>Add Local Repository</strong><br>
+    2. เลือก folder: <code style="background:#0f172a;padding:2px 6px;border-radius:4px;color:#7dd3fc">F:\Claude project\Biomass\Biomass Agent\backend</code><br>
+    3. คลิก <strong>Publish repository</strong> → เลือก repo <strong>au-agent</strong> → Publish</p>
+
+    <p style="margin-top:12px"><strong>วิธีที่ 2 — Command Line:</strong></p>
+    <div class="code" id="code-git">cd "F:\Claude project\Biomass\Biomass Agent\backend"
+git init
+git add .
+git commit -m "Initial commit"
+git remote add origin https://github.com/YOUR_USERNAME/au-agent.git
+git push -u origin main<button class="copy-btn" onclick="copyCode('code-git',this)">Copy</button></div>
+    <div class="note">✅ เสร็จแล้ว ไปที่ github.com/YOUR_USERNAME/au-agent จะเห็นไฟล์ทั้งหมด</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- PHASE 2: Supabase -->
+<!-- ══════════════════════════════════════════ -->
+<div class="phase" id="s2">
+  <div class="phase-header">
+    <div class="phase-num" style="background:#0c2a1a;color:#4ade80">2</div>
+    <div>
+      <div class="phase-title">Supabase — สร้างฐานข้อมูล</div>
+      <div class="phase-sub">PostgreSQL ฟรี 500MB พร้อม Realtime</div>
+    </div>
+    <div style="margin-left:auto"><span class="badge badge-green">~10 นาที</span></div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">Step 2.1</div>
+    <div class="step-title">สมัครและสร้าง Project</div>
+    <p>ไปที่ <strong style="color:#60a5fa">https://supabase.com</strong> → คลิก <strong>Start your project</strong> → Login ด้วย GitHub</p>
+    <p>คลิก <strong style="color:#22c55e">New project</strong> → กรอก:</p>
+    <table>
+      <tr><td>Name</td><td><strong>au-agent</strong></td></tr>
+      <tr><td>Database Password</td><td>ตั้งรหัสแข็งแรง <strong>บันทึกไว้ด้วย!</strong></td></tr>
+      <tr><td>Region</td><td><strong>Southeast Asia (Singapore)</strong></td></tr>
+    </table>
+    <p>คลิก <strong>Create new project</strong> → รอประมาณ 2 นาที</p>
+  </div>
+
+  <div class="step">
+    <div class="step-num">Step 2.2</div>
+    <div class="step-title">รัน SQL Schema สร้างตาราง</div>
+    <p>เมื่อ project พร้อมแล้ว → ไปที่เมนูซ้าย <strong>SQL Editor</strong></p>
+    <p>คลิก <strong>+ New query</strong> → เปิดไฟล์นี้ด้วย Notepad:</p>
+    <div class="code"><span class="cmt">เปิดไฟล์:</span>
+F:\Claude project\Biomass\Biomass Agent\database\supabase_schema.sql</div>
+    <p>Copy ทั้งหมด → Paste ลงใน SQL Editor → คลิก <strong style="color:#22c55e">Run</strong></p>
+    <div class="note">✅ จะเห็น "Success. No rows returned" ทุก statement — หมายความว่าตารางถูกสร้างแล้ว</div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">Step 2.3</div>
+    <div class="step-title">คัดลอก API Keys</div>
+    <p>เมนูซ้าย → <strong>Settings</strong> → <strong>API</strong></p>
+    <p>คัดลอก 2 ค่านี้ เก็บไว้ใช้ใน Railway:</p>
+    <table>
+      <tr><td>Project URL</td><td>เช่น <code>https://abcdefgh.supabase.co</code> → นี่คือ <strong>SUPABASE_URL</strong></td></tr>
+      <tr><td>service_role secret</td><td>คลิก Reveal → Copy → นี่คือ <strong>SUPABASE_SERVICE_KEY</strong></td></tr>
+    </table>
+    <div class="tip">⚠️ <strong>service_role key</strong> มีสิทธิ์เต็ม อย่า share หรือ commit ขึ้น GitHub</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- PHASE 3: Railway -->
+<!-- ══════════════════════════════════════════ -->
+<div class="phase" id="s3">
+  <div class="phase-header">
+    <div class="phase-num" style="background:#1c1020;color:#c084fc">3</div>
+    <div>
+      <div class="phase-title">Railway — Deploy Backend</div>
+      <div class="phase-sub">รัน Node.js server ฟรี — Railway ให้ $5 credit/เดือน</div>
+    </div>
+    <div style="margin-left:auto"><span class="badge badge-purple">~10 นาที</span></div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">Step 3.1</div>
+    <div class="step-title">สมัครและสร้าง Project</div>
+    <p>ไปที่ <strong style="color:#60a5fa">https://railway.app</strong> → <strong>Login with GitHub</strong></p>
+    <p>คลิก <strong>New Project</strong> → เลือก <strong>Deploy from GitHub repo</strong></p>
+    <p>เลือก repo <strong>au-agent</strong> ที่เพิ่งสร้าง → คลิก <strong>Deploy Now</strong></p>
+    <div class="tip">⚠️ ถ้าหา repo ไม่เจอ → คลิก "Configure GitHub App" → Allow access ให้ repo au-agent</div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">Step 3.2</div>
+    <div class="step-title">ตั้ง Environment Variables</div>
+    <p>เข้าไปใน project → คลิก service <strong>au-agent</strong> → Tab <strong>Variables</strong></p>
+    <p>คลิก <strong>+ New Variable</strong> แล้วเพิ่มทีละตัว:</p>
+    <div class="code" id="code-env">LINE_CHANNEL_ACCESS_TOKEN = <span class="cmt">[จาก LINE Developers — ดูขั้นตอนที่ 4]</span>
+LINE_CHANNEL_SECRET       = <span class="cmt">[จาก LINE Developers — ดูขั้นตอนที่ 4]</span>
+SUPABASE_URL              = <span class="cmt">[จาก Supabase Step 2.3]</span>
+SUPABASE_SERVICE_KEY      = <span class="cmt">[จาก Supabase Step 2.3]</span>
+OCR_MODE                  = demo
+PORT                      = 3000<button class="copy-btn" onclick="copyCode('code-env',this)">Copy</button></div>
+    <div class="note">💡 LINE Token ยังไม่มีตอนนี้ → ใส่ placeholder ก่อนได้ แล้วกลับมาแก้ หลังทำขั้นตอนที่ 4</div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">Step 3.3</div>
+    <div class="step-title">ดู Deploy Logs และ URL</div>
+    <p>Railway จะ build อัตโนมัติ → Tab <strong>Deployments</strong> → คลิก deployment ล่าสุด → ดู logs</p>
+    <p>เมื่อเห็น <code style="color:#4ade80">🚀 AU Agent Backend running on port 3000</code> แสดงว่าสำเร็จ</p>
+    <p>ไปที่ Tab <strong>Settings</strong> → <strong>Networking</strong> → คลิก <strong>Generate Domain</strong></p>
+    <p>จะได้ URL เช่น:</p>
+    <div class="url-box">https://au-agent-production-xxxx.up.railway.app <span>← เก็บ URL นี้ไว้!</span></div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">Step 3.4</div>
+    <div class="step-title">ทดสอบ Backend</div>
+    <p>เปิด URL นี้ในเบราว์เซอร์:</p>
+    <div class="url-box">https://au-agent-production-xxxx.up.railway.app/health</div>
+    <p>ต้องเห็น:</p>
+    <div class="code">{"ok":true,"mode":"demo"}</div>
+    <div class="note">✅ ถ้าเห็น JSON นี้ → Backend ทำงานปกติแล้ว!</div>
+    <div class="tip">⚠️ ถ้าเห็น Error → ไปดู Logs ใน Railway → มักเกิดจาก env variable ผิด</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- PHASE 4: LINE -->
+<!-- ══════════════════════════════════════════ -->
+<div class="phase" id="s4">
+  <div class="phase-header">
+    <div class="phase-num" style="background:#052e16;color:#4ade80">4</div>
+    <div>
+      <div class="phase-title">LINE Developers — ตั้ง Webhook</div>
+      <div class="phase-sub">เชื่อม LINE Official Account กับ backend</div>
+    </div>
+    <div style="margin-left:auto"><span class="badge badge-green">~5 นาที</span></div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">Step 4.1</div>
+    <div class="step-title">เปิด LINE Developers Console</div>
+    <p>ไปที่ <strong style="color:#60a5fa">https://developers.line.biz</strong> → Login → เลือก Provider → เลือก Channel ที่มีอยู่</p>
+    <p>ไปที่ Tab <strong>Messaging API</strong></p>
+  </div>
+
+  <div class="step">
+    <div class="step-num">Step 4.2</div>
+    <div class="step-title">คัดลอก Token และ Secret</div>
+    <table>
+      <tr>
+        <td>Channel secret</td>
+        <td>อยู่ใน Tab <strong>Basic settings</strong> → คลิก Copy</td>
+      </tr>
+      <tr>
+        <td>Channel access token</td>
+        <td>อยู่ใน Tab <strong>Messaging API</strong> → ส่วน "Channel access token" → คลิก <strong>Issue</strong> แล้ว Copy</td>
+      </tr>
+    </table>
+    <p>นำค่าทั้งสองไปใส่ใน Railway Variables (Step 3.2) แล้ว Redeploy</p>
+  </div>
+
+  <div class="step">
+    <div class="step-num">Step 4.3</div>
+    <div class="step-title">ตั้ง Webhook URL</div>
+    <p>Tab <strong>Messaging API</strong> → หัวข้อ <strong>Webhook settings</strong></p>
+    <p>คลิก <strong>Edit</strong> → ใส่ URL:</p>
+    <div class="code" id="code-webhook">https://au-agent-production-xxxx.up.railway.app/webhook<button class="copy-btn" onclick="copyCode('code-webhook',this)">Copy</button></div>
+    <p>คลิก <strong>Update</strong> → แล้วคลิก <strong>Verify</strong></p>
+    <div class="note">✅ ถ้าขึ้น "Success" → Webhook ทำงานแล้ว!</div>
+    <div class="tip">⚠️ ถ้าขึ้น Error → ตรวจสอบว่า Railway URL ถูกต้องและ /health ตอบกลับได้</div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">Step 4.4</div>
+    <div class="step-title">ปิด Auto-reply</div>
+    <p>ใน Tab <strong>Messaging API</strong>:</p>
+    <table>
+      <tr><td>Use webhook</td><td><strong>ON ✅</strong></td></tr>
+      <tr><td>Auto-reply messages</td><td><strong>OFF</strong> (ไปที่ LINE Official Account Manager แล้วปิด)</td></tr>
+      <tr><td>Greeting messages</td><td><strong>OFF</strong></td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- PHASE 5: Netlify -->
+<!-- ══════════════════════════════════════════ -->
+<div class="phase" id="s5">
+  <div class="phase-header">
+    <div class="phase-num" style="background:#0c1a3a;color:#60a5fa">5</div>
+    <div>
+      <div class="phase-title">Netlify — Host Dashboard</div>
+      <div class="phase-sub">ลากวาง HTML ไฟล์เดียว ได้ URL ทันที ฟรี</div>
+    </div>
+    <div style="margin-left:auto"><span class="badge badge-blue">~2 นาที</span></div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">Step 5.1</div>
+    <div class="step-title">Upload ด้วย Netlify Drop</div>
+    <p>เปิด <strong style="color:#60a5fa">https://app.netlify.com/drop</strong> ในเบราว์เซอร์</p>
+    <p>เปิด File Explorer → ไปที่:</p>
+    <div class="code">F:\Claude project\Biomass\Biomass Agent\</div>
+    <p><strong>ลาก</strong> ไฟล์ <code>planning-mockup.html</code> ไปวางในหน้า Netlify Drop</p>
+    <div class="note">✅ Netlify จะ upload และให้ URL ภายใน 30 วินาที เช่น https://musical-tarsier-123.netlify.app</div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">Step 5.2</div>
+    <div class="step-title">บันทึก URL ของ Dashboard</div>
+    <p>คัดลอก URL ที่ได้ เช่น:</p>
+    <div class="url-box">https://musical-tarsier-123.netlify.app <span>← URL Dashboard ของคุณ</span></div>
+    <p>นำ URL นี้ไปใส่ใน Railway Variables:</p>
+    <div class="code">FRONTEND_URL = https://musical-tarsier-123.netlify.app</div>
+    <div class="tip">💡 ชื่อ Netlify เปลี่ยนได้ที่ Site settings → Change site name</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- PHASE 6: เชื่อม Dashboard -->
+<!-- ══════════════════════════════════════════ -->
+<div class="phase" id="s6">
+  <div class="phase-header">
+    <div class="phase-num" style="background:#292006;color:#fbbf24">6</div>
+    <div>
+      <div class="phase-title">เชื่อม Dashboard กับ Backend</div>
+      <div class="phase-sub">แก้ไฟล์ HTML ให้ดึงข้อมูลจาก API จริง</div>
+    </div>
+    <div style="margin-left:auto"><span class="badge badge-yellow">~5 นาที</span></div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">Step 6.1</div>
+    <div class="step-title">เปิดไฟล์ planning-mockup.html</div>
+    <p>เปิด Notepad++ หรือ VS Code → เปิดไฟล์:</p>
+    <div class="code">F:\Claude project\Biomass\Biomass Agent\planning-mockup.html</div>
+    <p>กด <strong>Ctrl+F</strong> → ค้นหา:</p>
+    <div class="code">apiStatus</div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">Step 6.2</div>
+    <div class="step-title">เพิ่ม API_BASE และ Live Data</div>
+    <p>หาบรรทัดที่มี <code>apiStatus</code> ในส่วน script → เพิ่ม code นี้ด้านบน:</p>
+    <div class="code" id="code-api"><span class="cmt">// ── API CONFIG ────────────────────────────────────</span>
+var API_BASE = 'https://au-agent-production-xxxx.up.railway.app';
+<span class="cmt">// แทนที่ด้วย Railway URL ของคุณ</span>
+
+<span class="cmt">// ── HEALTH CHECK ──────────────────────────────────</span>
+fetch(API_BASE + '/health')
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    var el = document.getElementById('apiStatus');
+    if(el){
+      el.textContent = '● Online';
+      el.style.color = '#22c55e';
+    }
+  })
+  .catch(function(){
+    var el = document.getElementById('apiStatus');
+    if(el){
+      el.textContent = '○ Offline';
+      el.style.color = '#ef4444';
+    }
+  });<button class="copy-btn" onclick="copyCode('code-api',this)">Copy</button></div>
+    <p>บันทึกไฟล์ → Upload ขึ้น Netlify อีกครั้ง (ลากวางใหม่)</p>
+    <div class="note">✅ เปิด Dashboard → มุมขวาบนจะเห็น <span style="color:#22c55e">● Online</span> แทน Offline</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- PHASE 7: LINE Group -->
+<!-- ══════════════════════════════════════════ -->
+<div class="phase" id="s7">
+  <div class="phase-header">
+    <div class="phase-num" style="background:#052e16;color:#4ade80">7</div>
+    <div>
+      <div class="phase-title">ลงทะเบียน LINE Group</div>
+      <div class="phase-sub">บอก Bot ว่ากลุ่มไหนคือกลุ่มแผน กลุ่มไหนคือกลุ่มคนขับ</div>
+    </div>
+    <div style="margin-left:auto"><span class="badge badge-green">~3 นาที</span></div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">Step 7.1</div>
+    <div class="step-title">เพิ่ม Bot เข้ากลุ่ม LINE</div>
+    <p>เปิด LINE → กลุ่มที่ต้องการ → กด ชื่อกลุ่ม → <strong>เชิญ</strong> → ค้นหา Official Account ของคุณ → เพิ่ม</p>
+    <div class="tip">💡 Bot ต้องอยู่ในกลุ่มก่อนจึงจะรับ/ส่งข้อความได้</div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">Step 7.2</div>
+    <div class="step-title">ลงทะเบียนกลุ่มแผนขนส่ง</div>
+    <p>ในกลุ่ม LINE ที่ <strong>ผู้จัดการส่งแผนขนส่ง</strong> → พิมพ์:</p>
+    <div class="code" id="code-reg1">ลงทะเบียน planning กลุ่มแผน Biomass<button class="copy-btn" onclick="copyCode('code-reg1',this)">Copy</button></div>
+    <div class="note">✅ Bot จะตอบ: "ลงทะเบียนกลุ่ม "กลุ่มแผน Biomass" เป็น planning แล้ว"</div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">Step 7.3</div>
+    <div class="step-title">ลงทะเบียนกลุ่มคนขับ (รับรูปใบชั่ง)</div>
+    <p>ในกลุ่ม LINE ที่ <strong>คนขับส่งรูปสลิป</strong> → พิมพ์:</p>
+    <div class="code" id="code-reg2">ลงทะเบียน driver_upload กลุ่มคนขับ<button class="copy-btn" onclick="copyCode('code-reg2',this)">Copy</button></div>
+    <div class="note">✅ Bot จะตอบ: "ลงทะเบียนกลุ่ม "กลุ่มคนขับ" เป็น driver_upload แล้ว"</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- PHASE 8: ทดสอบ -->
+<!-- ══════════════════════════════════════════ -->
+<div class="phase" id="s8">
+  <div class="phase-header">
+    <div class="phase-num" style="background:#0c1a3a;color:#60a5fa">8</div>
+    <div>
+      <div class="phase-title">ทดสอบระบบ End-to-End</div>
+      <div class="phase-sub">ทดสอบ flow จริงตั้งแต่ LINE ถึง Dashboard</div>
+    </div>
+    <div style="margin-left:auto"><span class="badge badge-blue">~5 นาที</span></div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">Step 8.1</div>
+    <div class="step-title">ทดสอบแผนขนส่ง</div>
+    <p>ในกลุ่ม planning → พิมพ์:</p>
+    <div class="code" id="code-plan">วันที่ 20/06/2026
+ต้นทาง: โรงงาน ABC
+ปลายทาง: บ.ยางไทย
+สินค้า: Wood Pellet
+ลูกค้า: Biomass Corp
+รถ 3 คัน<button class="copy-btn" onclick="copyCode('code-plan',this)">Copy</button></div>
+    <p><strong>ที่คาดหวัง:</strong> Bot ส่ง Flex Card กลับพร้อมปุ่ม ✅ ยืนยัน / 📅 เลื่อน / ❌ ยกเลิก</p>
+    <div class="note">✅ กด ยืนยัน → ไปดู Dashboard → หน้า แผนขนส่ง → จะเห็นแผนใหม่</div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">Step 8.2</div>
+    <div class="step-title">ทดสอบ OCR ใบชั่งน้ำหนัก (Demo Mode)</div>
+    <p>ในกลุ่ม driver_upload → ส่งรูปภาพใดก็ได้ (Demo Mode จะ simulate OCR)</p>
+    <p><strong>ที่คาดหวัง:</strong> Bot ตอบกลับผล OCR พร้อม Confidence %</p>
+    <div class="note">✅ Dashboard → บิลทั้งหมด → จะเห็นรายการใหม่เพิ่มขึ้น</div>
+    <div class="tip">💡 Demo Mode ใช้ข้อมูล mock — เปลี่ยน OCR_MODE=claude เมื่อพร้อมใช้จริง</div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">Step 8.3</div>
+    <div class="step-title">ทดสอบคำสั่งสรุป</div>
+    <p>พิมพ์ในกลุ่มใดก็ได้:</p>
+    <div class="code" id="code-sum">สรุป<button class="copy-btn" onclick="copyCode('code-sum',this)">Copy</button></div>
+    <p><strong>ที่คาดหวัง:</strong> Bot ส่งอีเมลสรุปประจำวัน (ต้องตั้ง SMTP ก่อน)</p>
+  </div>
+
+  <div class="step">
+    <div class="step-num">Step 8.4</div>
+    <div class="step-title">เปิดดู Supabase Database</div>
+    <p>Supabase → <strong>Table Editor</strong> → เลือก <strong>weight_slips</strong> หรือ <strong>planning</strong></p>
+    <p>จะเห็นข้อมูลที่ส่งมาจาก LINE แสดงขึ้นมาใน table จริง</p>
+    <div class="note">✅ ถ้าเห็นข้อมูล → ระบบทำงานครบ loop แล้ว!</div>
+  </div>
+</div>
+
+<!-- Final -->
+<div class="final">
+  <h2>🎉 ระบบพร้อมใช้งานแล้ว!</h2>
+  <p style="margin-bottom:16px">LINE → Webhook → Backend → Supabase → Dashboard</p>
+  <table style="text-align:left;max-width:500px;margin:0 auto">
+    <tr><td>📊 Dashboard</td><td><strong style="color:#4ade80">Netlify URL ของคุณ</strong></td></tr>
+    <tr><td>⚙️ Backend</td><td><strong style="color:#4ade80">Railway URL/health</strong></td></tr>
+    <tr><td>🗄️ Database</td><td><strong style="color:#4ade80">Supabase Table Editor</strong></td></tr>
+    <tr><td>💬 LINE</td><td><strong style="color:#4ade80">ลงทะเบียนกลุ่มแล้ว</strong></td></tr>
+  </table>
+  <p style="margin-top:20px;color:#4ade80">อนาคต: เปลี่ยน OCR_MODE=internal เพื่อใช้ Internal AI ของบริษัท</p>
+</div>
+
+</div>
+
+<script>
+function copyCode(id, btn) {
+  var el = document.getElementById(id);
+  var text = el.innerText.replace('Copy','').trim();
+  navigator.clipboard.writeText(text).then(function(){
+    btn.textContent = '✓ Copied!';
+    btn.classList.add('copied');
+    setTimeout(function(){ btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+</script>
+</body>
+</html>

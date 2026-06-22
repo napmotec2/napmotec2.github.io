@@ -1,0 +1,14 @@
+# Secrets — never commit
+*.json
+!package.json
+!package-lock.json
+
+# Backend (deployed separately to Render/Railway)
+backend/
+
+# Node modules
+node_modules/
+
+# Environment
+.env
+.env.*

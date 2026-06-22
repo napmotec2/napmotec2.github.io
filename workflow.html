@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AU Agent — Workflow Monitor</title>
+<style>
+:root {
+  --bg:      #0d1117;
+  --bg2:     #161b22;
+  --bg3:     #1f2937;
+  --border:  #30363d;
+  --text:    #e6edf3;
+  --text2:   #8b949e;
+  --text3:   #6e7681;
+  --ndBg:    #1a2033;
+  --ndBd:    #30363d;
+  --panel:   #161b22;
+  --shadow:  rgba(0,0,0,0.55);
+  --grid:    rgba(99,110,123,0.12);
+  --logBg:   #0d1117;
+  --status-active: #22c55e;
+  --status-warn:   #f59e0b;
+  --status-error:  #ef4444;
+  --status-idle:   #6b7280;
+  transition: background 0.4s, color 0.4s;
+}
+[data-theme="light"] {
+  --bg:      #f0f4f8;
+  --bg2:     #ffffff;
+  --bg3:     #f8fafc;
+  --border:  #d0d7de;
+  --text:    #1f2328;
+  --text2:   #57606a;
+  --text3:   #8c959f;
+  --ndBg:    #ffffff;
+  --ndBd:    #d0d7de;
+  --panel:   #ffffff;
+  --shadow:  rgba(0,0,0,0.13);
+  --grid:    rgba(0,0,0,0.06);
+  --logBg:   #f6f8fa;
+  --status-active: #16a34a;
+  --status-warn:   #d97706;
+  --status-error:  #dc2626;
+  --status-idle:   #9ca3af;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  overflow:hidden;height:100vh;
+  transition:background 0.4s ease,color 0.4s ease;
+  user-select:none;
+}
+
+/* ── TOP BAR ── */
+#topbar{
+  position:fixed;top:0;left:0;right:0;height:52px;
+  background:var(--bg2);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 18px;gap:14px;
+  z-index:100;transition:background 0.4s ease,border-color 0.4s ease;
+}
+#topbar .logo{
+  font-size:15px;font-weight:700;letter-spacing:.5px;
+  color:var(--text);display:flex;align-items:center;gap:7px;
+}
+.logo-dot{
+  width:8px;height:8px;border-radius:50%;background:#22c55e;
+  box-shadow:0 0 6px #22c55e;animation:pulse 2s infinite;
+}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.6;transform:scale(.85);}}
+#topbar .sep{color:var(--border);font-size:18px;}
+#topbar .subtitle{font-size:12px;color:var(--text2);}
+#topbar .spacer{flex:1;}
+
+/* ZOOM BUTTONS */
+.zoom-btns{display:flex;gap:4px;}
+.zoom-btn{
+  width:28px;height:28px;border-radius:6px;border:1px solid var(--border);
+  background:var(--bg3);color:var(--text);font-size:14px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .2s,border-color .2s;
+}
+.zoom-btn:hover{background:var(--border);}
+.zoom-lbl{font-size:12px;color:var(--text2);width:38px;text-align:center;}
+
+/* LEGEND */
+.legend{display:flex;gap:10px;align-items:center;}
+.leg-item{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2);}
+.leg-dot{width:8px;height:8px;border-radius:50%;}
+
+/* ── DAY/NIGHT TOGGLE ── */
+.toggle-wrap{cursor:pointer;position:relative;}
+.toggle-track{
+  width:70px;height:32px;border-radius:16px;
+  position:relative;overflow:hidden;
+  box-shadow:inset 0 2px 6px var(--shadow);
+  transition:all .4s ease;
+}
+/* Day background (sky) */
+.track-day{
+  position:absolute;inset:0;
+  background:linear-gradient(180deg,#38bdf8 0%,#7dd3fc 60%,#bae6fd 100%);
+  transition:opacity .4s ease;
+  opacity:1;
+}
+[data-theme="dark"] .track-day{opacity:0;}
+/* Night background (space) */
+.track-night{
+  position:absolute;inset:0;
+  background:linear-gradient(180deg,#0f172a 0%,#1e1b4b 60%,#1e3a5f 100%);
+  transition:opacity .4s ease;
+  opacity:0;
+}
+[data-theme="dark"] .track-night{opacity:1;}
+/* Stars */
+.star{position:absolute;border-radius:50%;background:#fff;}
+.s1{width:2px;height:2px;top:5px;left:12px;opacity:.9;}
+.s2{width:1.5px;height:1.5px;top:10px;left:22px;opacity:.7;}
+.s3{width:2px;height:2px;top:6px;left:30px;opacity:.8;}
+.s4{width:1.5px;height:1.5px;top:13px;left:40px;opacity:.6;}
+.s5{width:2px;height:2px;top:4px;left:48px;opacity:.9;}
+/* Clouds */
+.cloud{
+  position:absolute;background:rgba(255,255,255,.85);border-radius:20px;
+  transition:opacity .4s ease;
+}
+.cl1{width:22px;height:8px;top:8px;left:6px;}
+.cl1::before{
+  content:'';position:absolute;width:12px;height:10px;border-radius:50%;
+  background:rgba(255,255,255,.85);top:-5px;left:4px;
+}
+.cl2{width:18px;height:7px;top:14px;left:32px;opacity:.7;}
+[data-theme="dark"] .cloud{opacity:0;}
+/* Knob */
+.toggle-knob{
+  position:absolute;width:26px;height:26px;border-radius:50%;
+  top:3px;left:3px;
+  transition:transform .4s cubic-bezier(.34,1.56,.64,1),background .4s ease;
+  z-index:10;overflow:hidden;
+  box-shadow:0 2px 8px rgba(0,0,0,.35);
+}
+/* Sun face */
+.sun-face{
+  position:absolute;inset:0;
+  background:radial-gradient(circle at 40% 40%,#fef08a,#facc15 50%,#f59e0b);
+  display:flex;align-items:center;justify-content:center;
+  transition:opacity .4s ease;
+}
+.sun-face::before{
+  content:'☀';font-size:14px;
+}
+/* Sun rays ring */
+.sun-face::after{
+  content:'';position:absolute;inset:-6px;border-radius:50%;
+  box-shadow:0 0 0 2.5px #fbbf24;
+  transition:opacity .4s ease;
+  opacity:.7;
+}
+/* Moon face */
+.moon-face{
+  position:absolute;inset:0;
+  background:radial-gradient(circle at 60% 40%,#f1f5f9,#cbd5e1);
+  display:flex;align-items:center;justify-content:center;
+  transition:opacity .4s ease;opacity:0;
+}
+.moon-face::before{content:'🌙';font-size:13px;}
+[data-theme="dark"] .toggle-knob{transform:translateX(38px);}
+[data-theme="dark"] .sun-face{opacity:0;}
+[data-theme="dark"] .moon-face{opacity:1;}
+
+/* ── SVG CANVAS ── */
+#canvas{
+  position:fixed;top:52px;left:0;right:0;bottom:0;
+  overflow:hidden;cursor:grab;
+}
+#canvas:active{cursor:grabbing;}
+#canvas svg{width:100%;height:100%;}
+.node-g{cursor:pointer;}
+.node-rect{
+  fill:var(--ndBg);stroke:var(--ndBd);stroke-width:1.5;
+  rx:8;ry:8;filter:drop-shadow(0 2px 8px var(--shadow));
+  transition:fill .4s,stroke .4s;
+}
+.node-g:hover .node-rect{stroke-width:2.5;}
+.node-title{
+  font-size:12.5px;font-weight:700;fill:var(--text);dominant-baseline:middle;
+  transition:fill .4s;
+}
+.node-sub{
+  font-size:10.5px;fill:var(--text2);dominant-baseline:middle;
+  transition:fill .4s;
+}
+.node-tool{
+  font-size:9.5px;fill:var(--text3);dominant-baseline:middle;
+  transition:fill .4s;
+}
+.badge{rx:4;ry:4;}
+.badge-lbl{font-size:9px;font-weight:700;dominant-baseline:middle;text-anchor:middle;}
+
+/* STATUS GLOW */
+.glow-active{filter:drop-shadow(0 0 6px #22c55e);}
+.glow-warn  {filter:drop-shadow(0 0 6px #f59e0b);}
+.glow-error {filter:drop-shadow(0 0 6px #ef4444);}
+
+/* Edge paths */
+.edge{fill:none;stroke-width:1.8;stroke-linecap:round;opacity:.72;}
+.edge-active{stroke:#22c55e;stroke-dasharray:6 3;animation:dash 1.2s linear infinite;}
+.edge-warn  {stroke:#f59e0b;stroke-dasharray:5 3;animation:dash .9s linear infinite;}
+.edge-idle  {stroke:#4b5563;}
+.edge-dashed{stroke:#6b7280;stroke-dasharray:4 4;}
+@keyframes dash{to{stroke-dashoffset:-18;}}
+
+/* Blink animations */
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.15;}}
+.blink-warn{animation:blink .75s ease-in-out infinite;}
+.blink-error{animation:blink .5s ease-in-out infinite;}
+
+/* ── DETAIL PANEL ── */
+#detail{
+  position:fixed;top:52px;right:0;width:295px;bottom:0;
+  background:var(--panel);border-left:1px solid var(--border);
+  display:flex;flex-direction:column;
+  transform:translateX(100%);transition:transform .3s ease,background .4s,border-color .4s;
+  z-index:50;overflow:hidden;
+}
+#detail.open{transform:translateX(0);}
+#det-head{
+  padding:14px 16px 12px;border-bottom:1px solid var(--border);
+  display:flex;align-items:flex-start;gap:10px;
+  transition:border-color .4s;
+}
+#det-close{
+  background:none;border:none;color:var(--text2);cursor:pointer;
+  font-size:18px;padding:0 4px;margin-left:auto;line-height:1;
+  transition:color .2s;
+}
+#det-close:hover{color:var(--text);}
+#det-body{flex:1;overflow-y:auto;padding:14px 16px;}
+#det-body::-webkit-scrollbar{width:5px;}
+#det-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+.det-sect{margin-bottom:14px;}
+.det-lbl{font-size:10px;font-weight:600;letter-spacing:.8px;color:var(--text3);text-transform:uppercase;margin-bottom:6px;}
+.det-val{font-size:13px;color:var(--text);line-height:1.5;}
+.stat-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;
+}
+.stat-row:last-child{border:none;}
+.stat-k{color:var(--text2);}
+.stat-v{color:var(--text);font-weight:600;}
+.log-item{
+  padding:5px 8px;border-radius:5px;margin-bottom:4px;
+  background:var(--logBg);font-size:11.5px;color:var(--text2);
+  line-height:1.45;transition:background .4s;
+}
+.log-item.ok  {border-left:3px solid #22c55e;}
+.log-item.warn{border-left:3px solid #f59e0b;}
+.log-item.err {border-left:3px solid #ef4444;}
+.log-time{font-size:10px;color:var(--text3);margin-bottom:2px;}
+
+/* TOOL CHIP */
+.tool-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 9px;border-radius:100px;font-size:11px;font-weight:600;
+  background:var(--bg3);color:var(--text2);border:1px solid var(--border);
+  transition:background .4s,color .4s,border-color .4s;
+}
+
+/* Grid dots background for SVG */
+#grid-pat{pointer-events:none;}
+
+/* COUNT BADGE */
+.cnt-bg{fill:#ef4444;}
+.cnt-txt{font-size:9px;font-weight:800;fill:#fff;dominant-baseline:middle;text-anchor:middle;}
+
+/* Hint bar */
+#hint{
+  position:fixed;bottom:14px;left:50%;transform:translateX(-50%);
+  background:var(--bg2);border:1px solid var(--border);border-radius:8px;
+  padding:6px 14px;font-size:11px;color:var(--text3);
+  pointer-events:none;transition:background .4s,border-color .4s;
+}
+
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="topbar">
+  <div class="logo">
+    <div class="logo-dot"></div>
+    AU Agent
+  </div>
+  <div class="sep">|</div>
+  <div class="subtitle">Workflow Monitor</div>
+  <div class="spacer"></div>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="leg-item"><div class="leg-dot" style="background:#22c55e"></div>Active</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#f59e0b"></div>Warning</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#ef4444"></div>Error</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#6b7280"></div>Idle</div>
+  </div>
+
+  <div class="sep">|</div>
+
+  <!-- ZOOM -->
+  <div class="zoom-btns">
+    <button class="zoom-btn" onclick="doZoom(1.2)" title="Zoom In">+</button>
+    <div class="zoom-lbl" id="zoomLbl">100%</div>
+    <button class="zoom-btn" onclick="doZoom(1/1.2)" title="Zoom Out">−</button>
+    <button class="zoom-btn" onclick="resetView()" title="Reset" style="font-size:10px">⌂</button>
+  </div>
+
+  <div class="sep">|</div>
+
+  <!-- DAY / NIGHT TOGGLE -->
+  <div class="toggle-wrap" onclick="toggleTheme()" title="Toggle Day / Night">
+    <div class="toggle-track">
+      <div class="track-day">
+        <div class="cloud cl1"></div>
+        <div class="cloud cl2"></div>
+      </div>
+      <div class="track-night">
+        <div class="star s1"></div>
+        <div class="star s2"></div>
+        <div class="star s3"></div>
+        <div class="star s4"></div>
+        <div class="star s5"></div>
+      </div>
+      <div class="toggle-knob">
+        <div class="sun-face"></div>
+        <div class="moon-face"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SVG CANVAS -->
+<div id="canvas">
+  <svg id="svg" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <pattern id="grid-pat" width="28" height="28" patternUnits="userSpaceOnUse">
+        <circle cx="0.8" cy="0.8" r="0.8" fill="var(--grid)"/>
+      </pattern>
+      <marker id="arr-active" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+        <path d="M0,0 L6,3 L0,6 Z" fill="#22c55e" opacity=".8"/>
+      </marker>
+      <marker id="arr-warn" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+        <path d="M0,0 L6,3 L0,6 Z" fill="#f59e0b" opacity=".8"/>
+      </marker>
+      <marker id="arr-idle" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+        <path d="M0,0 L6,3 L0,6 Z" fill="#4b5563" opacity=".7"/>
+      </marker>
+      <marker id="arr-dashed" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+        <path d="M0,0 L6,3 L0,6 Z" fill="#6b7280" opacity=".6"/>
+      </marker>
+    </defs>
+    <!-- Grid background -->
+    <rect id="gridBg" x="-5000" y="-5000" width="15000" height="15000" fill="url(#grid-pat)"/>
+    <!-- Diagram group (pan/zoom applied here) -->
+    <g id="diag"></g>
+  </svg>
+</div>
+
+<!-- DETAIL PANEL -->
+<div id="detail">
+  <div id="det-head">
+    <div>
+      <div id="det-title" style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:3px"></div>
+      <div id="det-status-chip"></div>
+    </div>
+    <button id="det-close" onclick="closeDetail()">✕</button>
+  </div>
+  <div id="det-body"></div>
+</div>
+
+<div id="hint">🖱 Drag to pan · Scroll to zoom · Click node for details</div>
+
+<script>
+/* ─────────────────────────────────────────────
+   DATA — AU Agent Pipeline Nodes
+───────────────────────────────────────────── */
+var NW=176, NH=82;
+
+var NODES = [
+  // ── MAIN ENTRY ──────────────────────────────────────
+  {id:'webhook',   label:'LINE Webhook',   sub:'Entry Point',     tool:'LINE Messaging API',
+   status:'active', x:80,  y:240,
+   stats:{processed:1247,today:38,uptime:'99.8%'},
+   logs:[
+     {t:'09:41',m:'Received image from กลุ่ม Biomass TH',s:'ok'},
+     {t:'09:38',m:'Text command /สรุป received',s:'ok'},
+     {t:'09:21',m:'New transport plan from SALE',s:'ok'},
+   ],
+   desc:'รับ event จาก LINE ทุกประเภท (รูปภาพ, ข้อความ, flex) ก่อนส่งต่อ router'},
+
+  {id:'auth',      label:'Auth & Verify',  sub:'Signature Check', tool:'HMAC-SHA256',
+   status:'active', x:320, y:240,
+   stats:{passed:1247,failed:3,rate:'99.76%'},
+   logs:[
+     {t:'09:41',m:'Signature valid ✓',s:'ok'},
+     {t:'09:22',m:'Signature valid ✓',s:'ok'},
+     {t:'08:55',m:'Invalid signature — blocked',s:'err'},
+   ],
+   desc:'ตรวจสอบ X-Line-Signature ของทุก webhook ป้องกัน replay attack'},
+
+  {id:'router',    label:'Message Router', sub:'Type Classifier',  tool:'Rule Engine',
+   status:'active', x:560, y:240,
+   stats:{plans:42,images:1205,commands:18},
+   logs:[
+     {t:'09:41',m:'→ Image route (slip detected)',s:'ok'},
+     {t:'09:38',m:'→ Command route (/สรุป)',s:'ok'},
+     {t:'09:21',m:'→ Plan route (text plan)',s:'ok'},
+   ],
+   desc:'จำแนกประเภทข้อความ: แผน / รูปสลิป / คำสั่ง แล้วส่งไปยัง agent ที่ถูกต้อง'},
+
+  // ── PLANNING BRANCH ─────────────────────────────────
+  {id:'planparse', label:'Plan Parser',    sub:'Extract Routes',  tool:'Regex + NLP (internal)',
+   status:'active', x:800, y:80,
+   stats:{parsed:42,errors:1,accuracy:'97.6%'},
+   logs:[
+     {t:'09:21',m:'Extracted 3 routes from plan',s:'ok'},
+     {t:'08:10',m:'Ambiguous route — flagged',s:'warn'},
+   ],
+   desc:'แยกเส้นทาง ต้นทาง-ปลายทาง-น้ำหนักที่วางแผน จากข้อความแผนงาน'},
+
+  {id:'plansave',  label:'Save Plan',      sub:'Supabase Write',  tool:'Supabase (internal)',
+   status:'active', x:1040,y:80,
+   stats:{saved:42,pending:0},
+   logs:[
+     {t:'09:21',m:'Plan #P042 saved to DB',s:'ok'},
+     {t:'08:10',m:'Partial plan #P041 saved',s:'warn'},
+   ],
+   desc:'บันทึกแผนงานลง Supabase table transport_plans'},
+
+  {id:'flexmsg',   label:'Flex Confirm',  sub:'Reply to LINE',   tool:'LINE Flex Message',
+   status:'active', x:1280,y:80,
+   stats:{sent:42},
+   logs:[
+     {t:'09:21',m:'Flex bubble sent — Plan #P042',s:'ok'},
+   ],
+   desc:'ส่ง LINE Flex Message ยืนยันรับแผน พร้อมสรุปเส้นทาง'},
+
+  // ── DRIVER BRANCH ────────────────────────────────────
+  {id:'imgdl',     label:'Download Image', sub:'Fetch from LINE', tool:'LINE Content API',
+   status:'active', x:800, y:340,
+   stats:{downloaded:1205,failed:2,avgMs:320},
+   logs:[
+     {t:'09:41',m:'Image 1.2MB downloaded OK',s:'ok'},
+     {t:'09:35',m:'Timeout retry #1 → success',s:'warn'},
+   ],
+   desc:'ดาวน์โหลดรูปสลิปน้ำหนักจาก LINE CDN ก่อนส่ง OCR'},
+
+  {id:'ocr',       label:'OCR Engine',    sub:'Extract Data',    tool:'Internal Vision AI',
+   status:'warn',  x:1040,y:340,
+   stats:{processed:1203,pending:5,avgConf:'78.4%'},
+   logs:[
+     {t:'09:41',m:'Conf 94% — Weight: 8.35t Origin: ท่าเรือA',s:'ok'},
+     {t:'09:38',m:'Conf 61% — sent to verify queue',s:'warn'},
+     {t:'09:30',m:'Conf 42% — low confidence',s:'err'},
+   ],
+   desc:'ประมวลผลรูปสลิป ดึง: น้ำหนัก / ต้นทาง / ปลายทาง / เวลา / ทะเบียนรถ'},
+
+  {id:'confrouter',label:'Confidence Router',sub:'Score Threshold',tool:'Threshold Engine',
+   status:'warn',  x:1280,y:340,
+   stats:{high:1042,medium:138,low:23,pending:11},
+   logs:[
+     {t:'09:41',m:'Score 94 → auto-accept',s:'ok'},
+     {t:'09:38',m:'Score 61 → verify queue (11 waiting)',s:'warn'},
+     {t:'09:30',m:'Score 42 → manual review',s:'err'},
+   ],
+   desc:'แบ่งสลิปตามคะแนน OCR: ≥85 อนุมัติอัตโนมัติ / 60-84 รอยืนยัน / <60 ตรวจสอบ'},
+
+  // ── SLIP OUTCOME NODES ───────────────────────────────
+  {id:'sliphigh',  label:'Auto Accept',   sub:'High Confidence', tool:'Supabase Write',
+   status:'active', x:1520,y:200,
+   stats:{accepted:1042,today:22},
+   logs:[
+     {t:'09:41',m:'Slip #S1205 accepted → matching',s:'ok'},
+   ],
+   desc:'บันทึกสลิปที่ OCR confidence สูง เข้า queue จับคู่ทันที'},
+
+  {id:'slipmid',   label:'Verify Queue',  sub:'Awaiting Review', tool:'Admin Dashboard',
+   status:'warn',  x:1520,y:340,
+   stats:{queue:11,avgWait:'14min',oldest:'52min'},
+   logs:[
+     {t:'09:38',m:'Slip #S1198 added — queue=11',s:'warn'},
+     {t:'09:20',m:'Slip #S1187 added — queue=10',s:'warn'},
+   ],
+   desc:'คิวรอ admin ตรวจสอบ — มี 11 รายการรอดำเนินการ'},
+
+  {id:'slipfail',  label:'Manual Review', sub:'Low Confidence',  tool:'Admin Flag',
+   status:'error', x:1520,y:480,
+   stats:{pending:5,unreadable:2},
+   logs:[
+     {t:'09:30',m:'Slip #S1193 unreadable — flagged',s:'err'},
+     {t:'08:50',m:'Slip #S1184 low quality image',s:'err'},
+   ],
+   desc:'สลิปที่ OCR confidence ต่ำมาก — ต้องกรอกข้อมูลด้วยตัวเอง'},
+
+  // ── MATCH ENGINE ─────────────────────────────────────
+  {id:'match',     label:'Match Engine',  sub:'Origin↔Dest Pair', tool:'Supabase Query',
+   status:'active', x:1760,y:270,
+   stats:{matched:987,unmatched:55,today:18},
+   logs:[
+     {t:'09:41',m:'Matched: ท่าเรือA → โรงงานB (8.35t)',s:'ok'},
+     {t:'09:35',m:'No match found — queued retry',s:'warn'},
+   ],
+   desc:'จับคู่สลิปต้นทาง-ปลายทาง ตรวจสอบน้ำหนักสุทธิ และบันทึกเที่ยวรถสำเร็จ'},
+
+  {id:'veralert',  label:'Unmatch Alert', sub:'Notify LINE',      tool:'LINE Push API',
+   status:'warn',  x:2000,y:200,
+   stats:{alerts:55,pending:8},
+   logs:[
+     {t:'09:35',m:'Alert sent: สลิปไม่มีคู่ #S1197',s:'warn'},
+   ],
+   desc:'แจ้งเตือน admin ผ่าน LINE เมื่อจับคู่ไม่สำเร็จ หรือน้ำหนักต่างเกิน 5%'},
+
+  {id:'admindash', label:'Admin Dashboard',sub:'Review & Approve', tool:'Web Dashboard',
+   status:'warn',  x:2000,y:340,
+   stats:{pending:16,approved:987,today:22},
+   logs:[
+     {t:'09:38',m:'Slip #S1198 awaiting review',s:'warn'},
+     {t:'09:15',m:'Admin approved #S1190',s:'ok'},
+   ],
+   desc:'หน้า dashboard สำหรับ admin ตรวจสอบ verify queue และ manual review'},
+
+  // ── EMAIL SUMMARY BRANCH ─────────────────────────────
+  {id:'sumcmd',    label:'/สรุป Command',  sub:'Trigger Summary', tool:'LINE Text Parser',
+   status:'active', x:320, y:560,
+   stats:{triggered:18,lastRun:'09:38'},
+   logs:[
+     {t:'09:38',m:'Summary triggered by Nap',s:'ok'},
+   ],
+   desc:'รับคำสั่ง /สรุป จาก LINE แล้วเริ่ม flow สรุปรายวัน'},
+
+  {id:'sigcheck',  label:'Auth Check',    sub:'Admin Verify',    tool:'Role Validator',
+   status:'active', x:560, y:560,
+   stats:{passed:18,denied:2},
+   logs:[
+     {t:'09:38',m:'User authorized ✓',s:'ok'},
+     {t:'08:00',m:'Unauthorized user — blocked',s:'err'},
+   ],
+   desc:'ตรวจสอบว่าผู้ส่งคำสั่ง /สรุป เป็น admin ที่ได้รับอนุญาต'},
+
+  {id:'emailgen',  label:'Email Generator',sub:'Build Report',   tool:'Internal LLM (summary)',
+   status:'active', x:800, y:560,
+   stats:{generated:18,avgRows:47},
+   logs:[
+     {t:'09:38',m:'Report: 22 trips, 187.5t total',s:'ok'},
+   ],
+   desc:'สร้างรายงานสรุปรายวัน: จำนวนเที่ยว / น้ำหนักรวม / สถานะที่คงค้าง'},
+
+  {id:'emailsend', label:'Send Email',    sub:'SMTP Dispatch',   tool:'SMTP (internal relay)',
+   status:'active', x:1040,y:560,
+   stats:{sent:18,failed:0},
+   logs:[
+     {t:'09:38',m:'Email sent → finance@company.th',s:'ok'},
+   ],
+   desc:'ส่งรายงานทาง email ไปยังฝ่ายการเงิน'},
+
+  {id:'fininbox',  label:'Finance Inbox', sub:'Report Received', tool:'Email',
+   status:'idle',  x:1280,y:560,
+   stats:{received:18},
+   logs:[
+     {t:'09:38',m:'Report #18 received OK',s:'ok'},
+   ],
+   desc:'ฝ่ายการเงินรับรายงานสรุปประจำวัน'},
+];
+
+/* ─────────────────────────────────────────────
+   EDGES
+───────────────────────────────────────────── */
+var EDGES = [
+  // Main flow
+  {s:'webhook',   t:'auth',       style:'active'},
+  {s:'auth',      t:'router',     style:'active'},
+  // Plan branch
+  {s:'router',    t:'planparse',  style:'active', label:'plan'},
+  {s:'planparse', t:'plansave',   style:'active'},
+  {s:'plansave',  t:'flexmsg',    style:'active'},
+  // Driver branch
+  {s:'router',    t:'imgdl',      style:'active', label:'image'},
+  {s:'imgdl',     t:'ocr',        style:'active'},
+  {s:'ocr',       t:'confrouter', style:'active'},
+  // Confidence split
+  {s:'confrouter',t:'sliphigh',   style:'active', label:'≥85%'},
+  {s:'confrouter',t:'slipmid',    style:'warn',   label:'60-84%'},
+  {s:'confrouter',t:'slipfail',   style:'error',  label:'<60%'},
+  // Match
+  {s:'sliphigh',  t:'match',      style:'active'},
+  {s:'slipmid',   t:'admindash',  style:'warn'},
+  {s:'slipfail',  t:'admindash',  style:'warn'},
+  {s:'admindash', t:'match',      style:'warn', label:'approved'},
+  // Post-match
+  {s:'match',     t:'veralert',   style:'warn',   label:'no match'},
+  {s:'match',     t:'admindash',  style:'active', label:'summary'},
+  {s:'veralert',  t:'admindash',  style:'warn'},
+  // Re-match loop
+  {s:'admindash', t:'match',      style:'dashed', label:'re-match'},
+  // Email branch
+  {s:'router',    t:'sumcmd',     style:'idle',   label:'/สรุป'},
+  {s:'sumcmd',    t:'sigcheck',   style:'active'},
+  {s:'sigcheck',  t:'emailgen',   style:'active'},
+  {s:'emailgen',  t:'emailsend',  style:'active'},
+  {s:'emailsend', t:'fininbox',   style:'active'},
+  // Admin→email trigger
+  {s:'admindash', t:'emailgen',   style:'idle',   label:'auto'},
+];
+
+/* ─────────────────────────────────────────────
+   THEME
+───────────────────────────────────────────── */
+var isDark = true;
+function toggleTheme(){
+  isDark = !isDark;
+  document.documentElement.setAttribute('data-theme', isDark?'dark':'light');
+  // Re-render text fills (SVG text fill is set inline; CSS vars handle via fill:var(...))
+  // Nothing extra needed since SVG text uses CSS vars.
+}
+
+/* ─────────────────────────────────────────────
+   VIEW TRANSFORM (pan + zoom)
+───────────────────────────────────────────── */
+var vx=60, vy=60, vs=0.72;
+var dragging=false, lastMx=0, lastMy=0;
+var animX=60, animY=60, animS=0.72;
+
+function applyTransform(){
+  document.getElementById('diag').setAttribute(
+    'transform', 'translate('+vx+','+vy+') scale('+vs+')'
+  );
+  document.getElementById('zoomLbl').textContent = Math.round(vs*100)+'%';
+}
+
+function doZoom(factor){
+  var svgEl = document.getElementById('svg');
+  var cx = svgEl.clientWidth/2, cy = svgEl.clientHeight/2;
+  zoomAt(cx, cy, factor);
+}
+
+function zoomAt(cx, cy, factor){
+  var newS = Math.min(2.5, Math.max(0.2, vs * factor));
+  vx = cx - (cx - vx) * (newS / vs);
+  vy = cy - (cy - vy) * (newS / vs);
+  vs = newS;
+  applyTransform();
+}
+
+function resetView(){
+  vx=60; vy=60; vs=0.72;
+  applyTransform();
+}
+
+/* Drag to pan */
+var canv = document.getElementById('canvas');
+canv.addEventListener('mousedown', function(e){
+  if(e.target.closest('.node-g')) return;
+  dragging=true; lastMx=e.clientX; lastMy=e.clientY;
+});
+window.addEventListener('mousemove', function(e){
+  if(!dragging) return;
+  vx += e.clientX - lastMx;
+  vy += e.clientY - lastMy;
+  lastMx=e.clientX; lastMy=e.clientY;
+  applyTransform();
+});
+window.addEventListener('mouseup', function(){dragging=false;});
+
+/* Wheel to zoom */
+canv.addEventListener('wheel', function(e){
+  e.preventDefault();
+  var factor = e.deltaY < 0 ? 1.1 : 1/1.1;
+  var rect = canv.getBoundingClientRect();
+  zoomAt(e.clientX - rect.left, e.clientY - rect.top - 52, factor);
+}, {passive:false});
+
+/* ─────────────────────────────────────────────
+   BUILD SVG
+───────────────────────────────────────────── */
+function SE(tag){ return document.createElementNS('http://www.w3.org/2000/svg', tag); }
+function SA(el, attrs){ Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,v)); return el; }
+
+var STATUS_COLOR = {
+  active: '#22c55e',
+  warn:   '#f59e0b',
+  error:  '#ef4444',
+  idle:   '#6b7280'
+};
+var STATUS_LABEL = {
+  active: 'Active',
+  warn:   'Warning',
+  error:  'Error',
+  idle:   'Idle'
+};
+var TOOL_ICON = {
+  'LINE Messaging API': '💬',
+  'HMAC-SHA256':        '🔐',
+  'Rule Engine':        '🔀',
+  'Regex + NLP (internal)':'🧠',
+  'Supabase (internal)':'🗄',
+  'LINE Flex Message':  '📨',
+  'LINE Content API':   '📥',
+  'Internal Vision AI': '👁',
+  'Threshold Engine':   '⚖',
+  'Supabase Write':     '🗄',
+  'Admin Dashboard':    '🖥',
+  'Admin Flag':         '🚩',
+  'Supabase Query':     '🔍',
+  'LINE Push API':      '🔔',
+  'Web Dashboard':      '📊',
+  'LINE Text Parser':   '📝',
+  'Role Validator':     '🛡',
+  'Internal LLM (summary)':'🤖',
+  'SMTP (internal relay)': '✉',
+  'Email':              '📬',
+};
+
+function buildNode(nd){
+  var g = SE('g');
+  g.setAttribute('class','node-g');
+  g.setAttribute('transform','translate('+nd.x+','+nd.y+')');
+  g.addEventListener('click', function(e){ e.stopPropagation(); showDetail(nd); });
+
+  var c = STATUS_COLOR[nd.status];
+  var glowClass = nd.status==='active'?'glow-active':nd.status==='warn'?'glow-warn':nd.status==='error'?'glow-error':'';
+
+  /* Shadow rect */
+  var shadow = SE('rect');
+  SA(shadow,{x:'3',y:'4',width:NW,height:NH,rx:'9',fill:'rgba(0,0,0,0.3)'});
+  g.appendChild(shadow);
+
+  /* Main rect */
+  var rect = SE('rect');
+  SA(rect,{width:NW,height:NH,rx:'8',class:'node-rect',
+    stroke: nd.status==='active'?c:nd.status==='idle'?'var(--ndBd)':c
+  });
+  if(glowClass) rect.setAttribute('filter','drop-shadow(0 0 '+(nd.status==='active'?'5':'7')+'px '+c+')');
+  g.appendChild(rect);
+
+  /* Left status bar */
+  var bar = SE('rect');
+  SA(bar,{x:'0',y:'8',width:'4',height:NH-16,rx:'2',fill:c});
+  if(nd.status==='warn') bar.setAttribute('class','blink-warn');
+  if(nd.status==='error') bar.setAttribute('class','blink-error');
+  g.appendChild(bar);
+
+  /* Status dot */
+  var dot = SE('circle');
+  SA(dot,{cx:NW-12,cy:14,r:'5',fill:c});
+  if(nd.status==='warn'){dot.setAttribute('class','blink-warn');}
+  if(nd.status==='error'){dot.setAttribute('class','blink-error');}
+  g.appendChild(dot);
+
+  /* Title */
+  var title = SE('text');
+  SA(title,{x:'16',y:'22',class:'node-title'});
+  title.textContent = nd.label;
+  g.appendChild(title);
+
+  /* Sub */
+  var sub = SE('text');
+  SA(sub,{x:'16',y:'37',class:'node-sub'});
+  sub.textContent = nd.sub;
+  g.appendChild(sub);
+
+  /* Tool icon + name */
+  var icon = TOOL_ICON[nd.tool] || '⚙';
+  var toolT = SE('text');
+  SA(toolT,{x:'16',y:'54',class:'node-tool'});
+  toolT.textContent = icon + ' ' + nd.tool;
+  g.appendChild(toolT);
+
+  /* Stats badge (for warn/error, show count) */
+  if(nd.status==='warn' || nd.status==='error'){
+    var cnt = nd.stats.pending || nd.stats.queue || nd.stats.unmatched || 0;
+    if(cnt > 0){
+      var cbg = SE('rect');
+      SA(cbg,{x:NW-28,y:NH-20,width:'26',height:'14',rx:'7',class:'cnt-bg'});
+      g.appendChild(cbg);
+      var ctxt = SE('text');
+      SA(ctxt,{x:NW-15,y:NH-12,class:'cnt-txt'});
+      ctxt.textContent = cnt > 99 ? '99+' : String(cnt);
+      g.appendChild(ctxt);
+    }
+  }
+
+  return g;
+}
+
+function buildEdge(e){
+  var n1 = NODES.find(n=>n.id===e.s);
+  var n2 = NODES.find(n=>n.id===e.t);
+  if(!n1||!n2) return null;
+
+  var x1 = n1.x + NW, y1 = n1.y + NH/2;
+  var x2 = n2.x,      y2 = n2.y + NH/2;
+
+  // For edges that go upward or sideways, adjust start/end points
+  var dx = x2 - x1;
+  var cp = Math.max(60, Math.abs(dx)*0.45);
+
+  var path = SE('path');
+  var d = 'M '+x1+' '+y1+' C '+(x1+cp)+' '+y1+' '+(x2-cp)+' '+y2+' '+x2+' '+y2;
+
+  var styleClass = 'edge ';
+  var marker = 'arr-idle';
+  if(e.style==='active'){styleClass+='edge-active'; marker='arr-active';}
+  else if(e.style==='warn'){styleClass+='edge-warn'; marker='arr-warn';}
+  else if(e.style==='error'){styleClass+='edge-warn blink-warn'; marker='arr-warn';}
+  else if(e.style==='dashed'){styleClass+='edge-dashed'; marker='arr-dashed';}
+  else{styleClass+='edge-idle';}
+
+  SA(path,{d:d,class:styleClass,'marker-end':'url(#'+marker+')'});
+
+  var g = SE('g');
+  g.appendChild(path);
+
+  // Edge label
+  if(e.label){
+    var mx = (x1 + x2)/2, my = (y1 + y2)/2 - 8;
+    var bg = SE('rect');
+    var tw = e.label.length * 5.5 + 10;
+    SA(bg,{x:mx-tw/2,y:my-7,width:tw,height:13,rx:'4',
+      fill:isDark?'#1a2033':'#ffffff',stroke:'var(--border)',
+      'stroke-width':'1',opacity:'0.88'});
+    g.appendChild(bg);
+    var lbl = SE('text');
+    SA(lbl,{x:mx,y:my+0.5,'text-anchor':'middle','font-size':'9',
+      fill:'var(--text2)','dominant-baseline':'middle'});
+    lbl.textContent = e.label;
+    g.appendChild(lbl);
+  }
+
+  return g;
+}
+
+function render(){
+  var diag = document.getElementById('diag');
+  diag.innerHTML = '';
+
+  // Edges first (behind nodes)
+  EDGES.forEach(function(e){
+    var el = buildEdge(e);
+    if(el) diag.appendChild(el);
+  });
+
+  // Group labels
+  var groups = [
+    {label:'🔵 Main Entry',  x:80,  y:200, w:660},
+    {label:'📋 Planning Branch', x:800, y:32,  w:660},
+    {label:'📷 Driver Branch',   x:800, y:294, w:660},
+    {label:'🔗 Match & Verify', x:1760,y:170, w:340},
+    {label:'📧 Email Summary',  x:320, y:510, w:1060},
+  ];
+  groups.forEach(function(grp){
+    var gl = SE('text');
+    SA(gl,{x:grp.x+12, y:grp.y+16, 'font-size':'11',
+      fill:'var(--text3)', 'font-weight':'600', 'letter-spacing':'0.5'});
+    gl.textContent = grp.label;
+    diag.appendChild(gl);
+  });
+
+  // Nodes on top
+  NODES.forEach(function(nd){
+    diag.appendChild(buildNode(nd));
+  });
+
+  applyTransform();
+}
+
+/* ─────────────────────────────────────────────
+   DETAIL PANEL
+───────────────────────────────────────────── */
+function showDetail(nd){
+  var det = document.getElementById('detail');
+  det.classList.add('open');
+
+  document.getElementById('det-title').textContent = nd.label;
+
+  var c = STATUS_COLOR[nd.status];
+  document.getElementById('det-status-chip').innerHTML =
+    '<span class="tool-chip" style="color:'+c+';border-color:'+c+'40">'+
+    '<span style="width:7px;height:7px;border-radius:50%;background:'+c+';display:inline-block'+(nd.status==='warn'?';animation:blink .75s infinite':'')+'"></span>'+
+    STATUS_LABEL[nd.status]+'</span>';
+
+  var icon = TOOL_ICON[nd.tool] || '⚙';
+  var s = nd.stats;
+
+  var statsHTML = Object.entries(s).map(function(kv){
+    return '<div class="stat-row"><span class="stat-k">'+kv[0]+'</span><span class="stat-v">'+kv[1]+'</span></div>';
+  }).join('');
+
+  var logsHTML = nd.logs.map(function(l){
+    return '<div class="log-item '+l.s+'"><div class="log-time">'+l.t+'</div>'+l.m+'</div>';
+  }).join('');
+
+  document.getElementById('det-body').innerHTML =
+    '<div class="det-sect">'+
+      '<div class="det-lbl">Description</div>'+
+      '<div class="det-val">'+nd.desc+'</div>'+
+    '</div>'+
+    '<div class="det-sect">'+
+      '<div class="det-lbl">Tool</div>'+
+      '<span class="tool-chip">'+icon+' '+nd.tool+'</span>'+
+    '</div>'+
+    '<div class="det-sect">'+
+      '<div class="det-lbl">Statistics</div>'+
+      statsHTML+
+    '</div>'+
+    '<div class="det-sect">'+
+      '<div class="det-lbl">Recent Logs</div>'+
+      logsHTML+
+    '</div>';
+}
+
+function closeDetail(){
+  document.getElementById('detail').classList.remove('open');
+}
+
+/* Click on empty canvas = close panel */
+document.getElementById('canvas').addEventListener('click', function(e){
+  if(!e.target.closest('.node-g')) closeDetail();
+});
+
+/* ── INIT ── */
+render();
+applyTransform();
+</script>
+</body>
+</html>
