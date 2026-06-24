@@ -3,8 +3,10 @@
 !package.json
 !package-lock.json
 
-# Backend (deployed separately to Render/Railway)
-backend/
+# Backend secrets only
+backend/.env
+backend/.env.*
+backend/node_modules/
 
 # Node modules
 node_modules/
