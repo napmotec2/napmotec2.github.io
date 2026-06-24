@@ -2192,16 +2192,27 @@ function emRenderPreview() {
 
 // ─── อัปเดต verify จาก popup ──────────────────────────────
 async function confirmVerifyAPI(slipId, updates) {
+  const payload = { ...updates, status: 'wait' };
+  console.log('[confirmVerifyAPI] PATCH', slipId, payload);
   try {
-    await api('/api/slips/' + slipId, {
+    const r = await fetch(API_BASE + '/api/slips/' + slipId, {
       method: 'PATCH',
-      body: JSON.stringify({ ...updates, status: 'wait' }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     });
-    addLog('ver', 'VERIFY', `Admin ยืนยัน ${slipId} — อัปเดตสำเร็จ`);
-    await loadFromAPI(); // refresh
+    const json = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      const msg = json.error || json.message || r.status;
+      console.error('[confirmVerifyAPI] error:', msg);
+      alert('❌ บันทึกไม่สำเร็จ: ' + msg);
+    } else {
+      addLog('ver', 'VERIFY', `Admin ยืนยัน ${slipId} — สำเร็จ`);
+    }
   } catch (e) {
-    console.error('Verify API error:', e);
+    console.error('[confirmVerifyAPI] fetch failed:', e);
+    alert('❌ เชื่อมต่อ backend ไม่ได้: ' + e.message);
   }
+  await loadFromAPI().catch(() => {}); // refresh เสมอ ไม่ว่าจะ error หรือไม่
 }
 
 // ─── Auto-refresh ทุก 15 วินาที ────────────────────────────
@@ -2670,28 +2681,26 @@ function openVM(v) {
 }
 function closeVM() { document.getElementById('vmBg').classList.remove('on'); _currentVM = null; }
 function doConfirmVM() {
-  if (_currentVM && apiOnline) {
-    // ส่งไปอัปเดตจริงผ่าน API
-    var doctype = document.getElementById('vDoctype').value;
-    var updates = {
-      slip_type:        doctype === 'weight_dest' ? 'destination' : 'origin',
-      plate_head:       document.getElementById('vPlate').value,
-      slip_number:      document.getElementById('vSlipNo').value || null,
-      product_type:     document.getElementById('vProduct').value || null,
-      net_weight_kg:    parseFloat(document.getElementById('vWeight').value) * 1000 || null,
-      weigh_in_date:    document.getElementById('vDate').value,
-      weigh_in_time:    document.getElementById('vTimeIn').value  || null,
-      weigh_out_time:   document.getElementById('vTimeOut').value || null,
-      has_signature:    document.getElementById('vHasSig').checked,
-      company_name:     document.getElementById('vOrigin').value,
-      customer:         document.getElementById('vDest').value,
-    };
-    confirmVerifyAPI(_currentVM.id || _currentVM.raw?.id, updates)
-      .then(() => { closeVM(); })
-      .catch(() => { alert('เกิดข้อผิดพลาดในการอัปเดต'); });
+  var slipId = _currentVM && (_currentVM.id || _currentVM.raw?.id);
+  var doctype = document.getElementById('vDoctype').value;
+  var updates = {
+    slip_type:        doctype === 'weight_dest' ? 'destination' : 'origin',
+    plate_head:       document.getElementById('vPlate').value,
+    slip_number:      document.getElementById('vSlipNo').value || null,
+    product_type:     document.getElementById('vProduct').value || null,
+    net_weight_kg:    parseFloat(document.getElementById('vWeight').value) * 1000 || null,
+    weigh_in_date:    document.getElementById('vDate').value,
+    weigh_in_time:    document.getElementById('vTimeIn').value  || null,
+    weigh_out_time:   document.getElementById('vTimeOut').value || null,
+    has_signature:    document.getElementById('vHasSig').checked ? 1 : 0,
+    company_name:     document.getElementById('vOrigin').value,
+    customer:         document.getElementById('vDest').value,
+  };
+  closeVM(); // ปิด modal ทันทีเสมอ ไม่รอ API
+  if (slipId && apiOnline) {
+    confirmVerifyAPI(slipId, updates); // async fire-and-forget (จัดการ error เอง)
   } else {
-    alert('✅ ยืนยันข้อมูลแล้ว — ส่ง Match Agent');
-    closeVM();
+    loadFromAPI(); // refresh ถ้า offline
   }
 }
 function toggleReject() {
